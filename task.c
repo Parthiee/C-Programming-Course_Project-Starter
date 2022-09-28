@@ -172,6 +172,8 @@ void task_help()
 void task_add(int task_priority, char* task_text)
 {
     Task *new_task = initialize_task(task_text, task_priority);
+    short error = write_tasks_to_file(&new_task,1,"task.txt",0);
+
 
     // append the new task on a new line to the `task.txt` using - write_tasks_to_file()
     // handle errors if it couldn't be written
@@ -193,7 +195,6 @@ int compare_Task(const void *a, const void *b)
 void task_ls()
 {
     int num_tasks = 0;
-
     // Use read_all_tasks_from_file() to read the list of tasks from the file
     // char **string
     Task **task_list = read_all_tasks_from_file("task.txt", &num_tasks);
@@ -211,9 +212,8 @@ void task_ls()
     for(int i=0; i<num_tasks; i++)
     {   
         printf("%d.\t", i+1);
-        // place the print statement here
+        printf("%s",get_printable_task(*(task_list+i)));
     }
-    return;
 }
 
 void task_del(int task_index)
