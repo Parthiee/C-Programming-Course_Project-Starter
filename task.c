@@ -141,7 +141,7 @@ char* get_printable_task(Task *task)  {
 
 char* get_printable_complete_task(Task *task)  {
     char *task_str = (char*)malloc(sizeof(char)*STD_STRING_SIZE);
-    sprintf(task_str, "[X] %s \t | %d\n", task->text, task->priority);
+    sprintf(task_str, "[X] %s \t | %d | %s ", task->text, task->priority, get_printable_date(get_current_local_date()));
     return task_str;
 }
 
@@ -172,14 +172,14 @@ void task_help()
 void task_add(int task_priority, char* task_text)
 {
     Task *new_task = initialize_task(task_text, task_priority);
-    short error = write_tasks_to_file(&new_task,1,"task.txt",0);
-
+    short error = write_tasks_to_file(&new_task,1,"task.txt",1);
+    if(error==-1) printf("Cannot write into file");
 
     // append the new task on a new line to the `task.txt` using - write_tasks_to_file()
     // handle errors if it couldn't be written
 
     printf("\n\nAdded task:\n");
-    // display the task using - get_printable_task()
+    printf("%s",get_printable_task(new_task));
 
     return;
 }
@@ -203,16 +203,16 @@ void task_ls()
         printf("\n\nNo tasks to do.");
         return;
     }
-    
-    // use qsort() function to sort the tasks in the list
+
+    qsort(task_list,num_tasks,sizeof(Task*),&compare_Task);
 
     printf("\n\nList of incomplete tasks:\n");
     
     // display all contents by iterating using get_printable_task() 
     for(int i=0; i<num_tasks; i++)
     {   
-        printf("%d.\t", i+1);
-        printf("%s",get_printable_task(*(task_list+i)));
+        printf("\n%d.\t", i+1);
+        puts(get_printable_task(*(task_list+i)));
     }
 }
 
@@ -221,24 +221,30 @@ void task_del(int task_index)
     int num_tasks;
     // read all tasks using read_all_tasks_from_file()
     Task **task_list = NULL;
+
+    task_list=read_all_tasks_from_file("task.txt",&num_tasks);
     if(task_list==NULL)
     {
         printf("\n\nNo tasks to do.");
         return;
     }
     
-    // use qsort() function to sort the tasks in the list
+    
 
     for (int i = task_index - 1; i < (num_tasks-1); i++)  
     {  
         task_list[i] = task_list[i+1]; // assign arr[i+1] to arr[i]
     } 
-
-
+    qsort(task_list,num_tasks,sizeof(Task*),&compare_Task);
+    for(int i =0; i < num_tasks-1; i++)
+    {
+        printf("\n%d.\t", i+1);
+        puts(get_printable_task(*(task_list+i)));
+    }
     // Display all tasks after deletion, by iterating
     // NOTE: 1 less task
 
-
+    write_tasks_to_file(task_list,num_tasks-1,"task.txt",0);
     // write_tasks_to_file() to write entire task_list. 
     return;
 }
@@ -246,12 +252,14 @@ void task_del(int task_index)
 void task_done(int task_index)
 {
     int num_tasks;
+    
 
     // - read all tasks using read_all_tasks_from_file()
     // - sort the lists
     // - display status of the tasks after marking complete
 
     Task **task_list = NULL;
+    task_list=read_all_tasks_from_file("task.txt",&num_tasks);
 
     if(task_list==NULL)
     {
@@ -259,18 +267,22 @@ void task_done(int task_index)
         return;
     }
 
-    // CODE-HERE
+    qsort(task_list,num_tasks,sizeof(Task*),&compare_Task);
 
     Task* completed_task = task_list[task_index-1];
 
     printf("\n\nAfter complete:\n");
-    // CODE-HERE
+    printf("%s",get_printable_complete_task(completed_task));
 
     for (int i = task_index - 1; i < (num_tasks-1); i++)  
     {  
         task_list[i] = task_list[i+1]; // assign arr[i+1] to arr[i]
         // printf("%s %s", (task_list[i])->text, (task_list[i])->text);
     }
+
+    short dummy;
+    dummy = write_tasks_to_file(&completed_task,1,"done.txt",num_tasks);
+    dummy = write_tasks_to_file(task_list,num_tasks-1,"task.txt",0);
 
     // write 'completed' task to done.txt (append)
     // write entire task list to task.txt (overwrite)
@@ -284,32 +296,38 @@ void task_report()
 
     // read all tasks in task.txt using read_all_tasks_from_file() into task_list
     Task **task_list = NULL;
-
+    task_list=read_all_tasks_from_file("task.txt",&num_tasks);
     if(task_list==NULL)
     {
         printf("\n\nNo tasks to do.");
         return;
     }
     
-    // sort the task list
+    qsort(task_list,num_tasks,sizeof(Task*),&compare_Task);
 
     printf("\n\nPending: %d\n", num_tasks);
     for(int i=0; i<num_tasks; i++)
     {   
         printf("%d.\t", i+1);
-        printf(get_printable_task(*(task_list+i)));
+        puts(get_printable_task(*(task_list+i)));
     }
 
     int num_tasks_completed = 0;
      // read all tasks in done.txt using read_all_tasks_from_file() into task_list
     Task **task_list_completed = NULL;
+    task_list_completed=read_all_tasks_from_file("done.txt",&num_tasks_completed);
     if(task_list_completed==NULL)
     {
         printf("\n\nNo tasks done.");
         return;
     }
-
+    
     printf("\n\nCompleted: %d\n", num_tasks_completed);
+    for(int i=0; i<num_tasks_completed;i++)
+     {
+        printf("%d.\t", i+1);
+        puts(get_printable_complete_task(*(task_list_completed+i)));
+     }
     // display all tasks from the completed list -- iterate, and use get_printable_complete_task
 
     return;
